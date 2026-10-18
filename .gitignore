@@ -1,0 +1,64 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== 虚拟环境 =====
+.venv/
+venv/
+env/
+ENV/
+
+# ===== 模型权重（体积巨大，不纳入版本管理）=====
+data/models/
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+*.ckpt
+!**/adapter_config.json
+
+# ===== 数据集与索引（体积巨大，不纳入版本管理）=====
+data/datasets/
+data/corpus/
+data/index/
+data/traces/
+data/traces_leaked_v1/
+data/parquet/
+*.parquet
+*.jsonl
+
+# ===== 中间产物 / 缓存 =====
+data/agenticragtracer/wiki18_100w.jsonl
+outputs/
+logs/
+*.log
+
+# ===== 前端构建产物 =====
+web/dist/
+web/node_modules/
+node_modules/
+
+# ===== 系统 / 编辑器 =====
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# ===== 工作区元数据 =====
+.workbuddy/
+
+# ===== 密钥 / 环境变量 =====
+.env
+.env.*
+*.key
+*.pem

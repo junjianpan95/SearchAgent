@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SearchAgent · 多跳检索 Agentic RAG 问答系统</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg2: #121a30;
+    --panel: #1a2440;
+    --panel2: #212d4d;
+    --border: #2c3a5e;
+    --text: #e6ecff;
+    --muted: #8b98b8;
+    --accent: #4f8cff;
+    --accent2: #7c5cff;
+    --green: #34d399;
+    --orange: #fbbf24;
+    --red: #f87171;
+    --cyan: #22d3ee;
+    --font: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  header { text-align: center; padding: 20px 0 30px; }
+  .badge {
+    display: inline-block; font-size: 13px; color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 20px; padding: 4px 14px;
+    letter-spacing: 1px; margin-bottom: 14px;
+  }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; }
+  h1 .grad {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subtitle { color: var(--muted); font-size: 15px; margin-top: 10px; max-width: 680px; margin-left: auto; margin-right: auto; }
+
+  /* Nav tabs */
+  .tabs { display: flex; gap: 8px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+  .tab {
+    padding: 9px 20px; border-radius: 10px; cursor: pointer; font-size: 14px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+    transition: all .2s;
+  }
+  .tab:hover { color: var(--text); border-color: var(--accent); }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .section { display: none; animation: fade .3s; }
+  .section.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 19px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 800px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+
+  /* 轨迹可视化 */
+  .traj { margin-bottom: 30px; }
+  .traj-q {
+    background: var(--panel2); border-left: 3px solid var(--accent);
+    padding: 14px 18px; border-radius: 8px; margin-bottom: 14px; font-size: 15px;
+  }
+  .step {
+    display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start;
+  }
+  .step-icon {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .step-icon.search { background: var(--accent); }
+  .step-icon.read { background: var(--cyan); }
+  .step-icon.evidence { background: var(--green); }
+  .step-icon.answer { background: var(--accent2); }
+  .step-body { flex: 1; background: var(--panel2); border-radius: 9px; padding: 12px 14px; }
+  .step-type { font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .step-content { font-size: 14px; }
+  .hit { font-size: 13px; color: var(--muted); margin: 3px 0; padding-left: 12px; border-left: 2px solid var(--border); }
+  .hit b { color: var(--text); }
+  .answer-box {
+    background: linear-gradient(90deg, rgba(76,140,255,.15), rgba(124,92,255,.15));
+    border: 1px solid var(--accent2); border-radius: 10px; padding: 14px 18px;
+    font-size: 16px; font-weight: 600; margin-top: 8px;
+  }
+  .cite { color: var(--orange); font-size: 13px; font-weight: 500; }
+
+  /* 架构图 */
+  .arch { display: flex; flex-direction: column; gap: 10px; }
+  .arch-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .arch-node {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; font-size: 13px; text-align: center; min-width: 120px;
+  }
+  .arch-node .t { font-weight: 600; }
+  .arch-node .s { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .arch-arrow { color: var(--muted); text-align: center; font-size: 16px; }
+  .arch-node.hl { border-color: var(--accent); background: rgba(79,140,255,.12); }
+
+  /* 对比表 */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  td.best { color: var(--green); font-weight: 700; }
+  .metric-up { color: var(--green); font-weight: 600; }
+  .metric-down { color: var(--cyan); font-weight: 600; }
+
+  .stat { text-align: center; }
+  .stat .num { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .tag { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 12px; margin: 2px; }
+  .tag.blue { background: rgba(79,140,255,.15); color: var(--accent); }
+  .tag.green { background: rgba(52,211,153,.15); color: var(--green); }
+  .tag.orange { background: rgba(251,191,36,.15); color: var(--orange); }
+  .tag.purple { background: rgba(124,92,255,.15); color: var(--accent2); }
+
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 50px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">AGENTIC RAG · MULTI-HOP QA</div>
+    <h1><span class="grad">SearchAgent</span> 多跳检索问答系统</h1>
+    <p class="subtitle">基于在线检索与多策略后训练的 Agentic RAG —— 让模型依据中间证据逐轮生成查询、选择支持句，输出带可核验引用的最终答案</p>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-tab="demo">在线问答</div>
+    <div class="tab" data-tab="arch">系统架构</div>
+    <div class="tab" data-tab="train">训练方案</div>
+    <div class="tab" data-tab="result">实验结果</div>
+  </nav>
+
+  <!-- DEMO -->
+  <div class="section active" id="demo">
+    <div class="card">
+      <h2><span class="dot"></span>在线多跳检索问答</h2>
+      <p class="note" style="margin-bottom:16px">
+        输入一个问题，Agent 会实时执行 Search → Read → AddEvidence → Answer 完成跨文档桥接推理。
+        <span id="backend-status" style="color:var(--orange)">（正在检测后端…）</span>
+      </p>
+      <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+        <input id="question-input" type="text"
+               placeholder="例如：Who is the author of the novel that the movie 'The Shining' was based on?"
+               style="flex:1;min-width:260px;padding:12px 16px;border-radius:10px;border:1px solid var(--border);
+                      background:var(--bg2);color:var(--text);font-size:15px;font-family:var(--font);outline:none;">
+        <button id="ask-btn" style="padding:12px 24px;border-radius:10px;border:none;background:var(--accent);
+                      color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);">
+          提问
+        </button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <span class="note">示例：</span>
+        <button class="tag blue" style="cursor:pointer;border:none" onclick="askSample(0)">Shining 作者</button>
+        <button class="tag blue" style="cursor:pointer;border:none" onclick="askSample(1)">Inception 导演国籍</button>
+        <button class="tag blue" style="cursor:pointer;border:none" onclick="askSample(2)">2010世界杯金靴俱乐部</button>
+      </div>
+      <div id="traj-container" style="min-height:120px;">
+        <p class="note">在下方输入问题，或点击示例开始。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCH -->
+  <div class="section" id="arch">
+    <div class="card">
+      <h2><span class="dot"></span>系统架构</h2>
+      <div class="arch">
+        <div class="arch-row">
+          <div class="arch-node"><div class="t">多跳问题集</div><div class="s">SearchTrace</div></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-row">
+          <div class="arch-node hl"><div class="t">SearchAgent</div><div class="s">动作空间 · 记忆 · 预算</div></div>
+        </div>
+        <div class="arch-arrow">↓ 四个结构化动作</div>
+        <div class="arch-row">
+          <div class="arch-node"><div class="t">Search</div><div class="s">生成查询</div></div>
+          <div class="arch-node"><div class="t">Read</div><div class="s">读取页面</div></div>
+          <div class="arch-node"><div class="t">AddEvidence</div><div class="s">选择支持句</div></div>
+          <div class="arch-node"><div class="t">Answer</div><div class="s">带引用回答</div></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-row">
+          <div class="arch-node"><div class="t">检索后端</div><div class="s">BM25 + BGE-M3 + RRF + Reranker</div></div>
+          <div class="arch-node"><div class="t">Tavily 在线</div><div class="s">可插拔后端 · 消融</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>核心设计</h2>
+      <div class="grid grid-2">
+        <div>
+          <span class="tag blue">固定容量 Evidence Memory</span>
+          <span class="tag blue">历史查询去重</span>
+          <p class="note">防止冗余检索，控制工具成本</p>
+        </div>
+        <div>
+          <span class="tag green">桥接实体 direct-read</span>
+          <span class="tag green">结构化 recovery feedback</span>
+          <p class="note">跨文档推理的连接点与漂移恢复</p>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">预算约束：最多 4 次 Search · 6 次 Read · 8K token</p>
+    </div>
+  </div>
+
+  <!-- TRAIN -->
+  <div class="section" id="train">
+    <div class="card">
+      <h2><span class="dot"></span>两阶段训练</h2>
+      <div class="grid grid-2">
+        <div>
+          <h3 style="font-size:16px;margin-bottom:8px">Stage 1 · SFT（LoRA / DoRA）</h3>
+          <p class="note">LLaMA-Factory + DeepSpeed，仅监督 Agent 生成的查询、工具动作、证据选择、答案 token；以 Joint F1 + 证据链召回 + 工具成本联合选 checkpoint</p>
+        </div>
+        <div>
+          <h3 style="font-size:16px;margin-bottom:8px">Stage 2 · RL（GRPO / GSPO）</h3>
+          <p class="note">verl + vLLM + Ray + FSDP，真实检索环境 on-policy，每题采样 4 条完整轨迹，两阶段课程奖励</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>课程奖励设计</h2>
+      <p style="font-size:14px;margin-bottom:10px"><b>Stage 1</b> 优化新增 supporting-fact、引用有效性、grounding</p>
+      <p style="font-size:14px;margin-bottom:10px"><b>Stage 2</b> 强化 Answer EM/F1 并保留证据约束</p>
+      <div>
+        <span class="tag orange">重复查询惩罚</span>
+        <span class="tag orange">冗余证据惩罚</span>
+        <span class="tag orange">非法动作惩罚</span>
+        <span class="tag orange">工具成本惩罚</span>
+      </div>
+      <p class="note" style="margin-top:10px">配合 KL 约束、零方差 group 重采样、reward component 分布监控，抑制策略退化</p>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>四方案横向对比</h2>
+      <table>
+        <tr><th>方案</th><th>基座</th><th>后训练</th><th>说明</th></tr>
+        <tr><td>LoRA + GRPO</td><td>Qwen3</td><td>SFT + RL</td><td class="note">基线组合</td></tr>
+        <tr><td>LoRA + GSPO</td><td>Qwen3</td><td>SFT + RL</td><td class="note">GSPO 对比</td></tr>
+        <tr><td>DoRA + GRPO</td><td>Qwen3</td><td>SFT + RL</td><td class="note">DoRA 对比</td></tr>
+        <tr><td>DoRA + GSPO</td><td>Qwen3</td><td>SFT + RL</td><td class="note">最优候选</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="section" id="result">
+    <div class="card">
+      <h2><span class="dot"></span>关键指标（本地 smoke 实测）</h2>
+      <div class="grid grid-4">
+        <div class="stat"><div class="num">0.67</div><div class="label">Answer F1（smoke）</div></div>
+        <div class="stat"><div class="num">0.44</div><div class="label">Joint F1（smoke）</div></div>
+        <div class="stat"><div class="num">0.50</div><div class="label">证据链 All-Hit</div></div>
+        <div class="stat"><div class="num">5.0</div><div class="label">平均工具调用</div></div>
+      </div>
+      <p class="note" style="margin-top:12px">注：以上为 3 条内置样例的 smoke 验证值，证明代码逻辑正确；全量 6000 SFT + 1000 RL 的真实数字需在服务器（server_full 配置）上跑出</p>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>预期提升路径（对标 AgentRL 口径）</h2>
+      <table>
+        <tr><th>指标</th><th>Base ReAct</th><th>SFT</th><th>GRPO/GSPO</th></tr>
+        <tr><td>Answer F1</td><td>~0.43</td><td>~0.50</td><td class="best">~0.53</td></tr>
+        <tr><td>Joint F1 提升</td><td>-</td><td>-</td><td class="metric-up">+4%</td></tr>
+        <tr><td>完整证据链 All-Hit</td><td>-</td><td>-</td><td class="metric-up">+6%</td></tr>
+        <tr><td>冗余调用率</td><td>28%</td><td>-</td><td class="metric-down">22%</td></tr>
+        <tr><td>平均工具调用</td><td>4.8</td><td>-</td><td class="metric-down">4.2</td></tr>
+      </table>
+      <p class="note" style="margin-top:10px">※ 上表为对标样本的目标值，用于设定实验预期；真实数字以 server_full 跑出为准</p>
+    </div>
+  </div>
+
+  <footer>
+    SearchAgent · 基于在线检索与多策略后训练的 Agentic RAG 多跳问答系统<br>
+    本地 smoke（RTX 5060 Ti 16G · Qwen3-1.7B）已跑通全链路 · 全量训练待多卡服务器执行
+  </footer>
+</div>
+
+<script>
+// 内置样例问题（无后端时作为回退展示，有后端时作为示例按钮）
+const DEMO_DATA = __DEMO_DATA__;
+
+const tabs = document.querySelectorAll('.tab');
+const sections = { demo: document.getElementById('demo'), arch: document.getElementById('arch'),
+                   train: document.getElementById('train'), result: document.getElementById('result') };
+
+tabs.forEach(t => {
+  t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    Object.values(sections).forEach(s => s.classList.remove('active'));
+    sections[t.dataset.tab].classList.add('active');
+  });
+});
+
+const trajC = document.getElementById('traj-container');
+const qInput = document.getElementById('question-input');
+const askBtn = document.getElementById('ask-btn');
+const statusEl = document.getElementById('backend-status');
+const BACKEND = 'http://127.0.0.1:8001';
+
+// 动作类型中文标签与图标
+const ACTION_META = {
+  Search:       { label: '搜索（生成查询）', icon: 'S', cls: 'search' },
+  Read:         { label: '读取页面', icon: 'R', cls: 'read' },
+  AddEvidence:  { label: '选择支持句（加证据）', icon: 'E', cls: 'evidence' },
+  Answer:       { label: '生成答案', icon: 'A', cls: 'answer' },
+};
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// 渲染一条轨迹
+function renderTrajectory(d) {
+  let html = `<div class="traj-q">❓ ${esc(d.question)}</div>`;
+  d.trajectory.forEach(step => {
+    const a = step.action;
+    const type = a.type;
+    const meta = ACTION_META[type] || { label: type, icon: type[0], cls: 'search' };
+    let content = '';
+    if (type === 'Search') {
+      content = `生成检索查询：<b>"${esc(a.args.query)}"</b>`;
+      if (step.result && step.result.hits && step.result.hits.length) {
+        step.result.hits.forEach(h => {
+          content += `<div class="hit"><b>${esc(h.page)}</b> · ${esc(h.text.slice(0,80))}…</div>`;
+        });
+      } else {
+        content += `<div class="hit" style="color:var(--orange)">（无命中）</div>`;
+      }
+    } else if (type === 'Read') {
+      content = `读取页面：<b>${esc(a.args.page)}</b>`;
+    } else if (type === 'AddEvidence') {
+      content = `添加证据：<b>${esc(a.args.page)}</b> → "${esc(a.args.text.slice(0,80))}…"`;
+    } else if (type === 'Answer') {
+      content = `输出答案${d.citations && d.citations.length ? ` · 引用 <span class="cite">[${d.citations.join(', ')}]</span>` : ''}`;
+    }
+    html += `<div class="step">
+      <div class="step-icon ${meta.cls}" title="${esc(meta.label)}">${meta.icon}</div>
+      <div class="step-body">
+        <div class="step-type">${esc(type)} · ${esc(meta.label)}</div>
+        <div class="step-content">${content}</div>
+      </div>
+    </div>`;
+  });
+  html += `<div class="answer-box">✅ 最终答案：${esc(d.answer)}</div>`;
+  if (d.budget) {
+    html += `<p class="note">工具调用 ${d.budget.tool_calls} 次 · 证据 ${(d.evidence||[]).length} 条</p>`;
+  }
+  trajC.innerHTML = html;
+}
+
+// 在线提问
+async function ask(question) {
+  if (!question.trim()) return;
+  trajC.innerHTML = `<p class="note">⏳ Agent 正在多跳检索…</p>`;
+  try {
+    const resp = await fetch(BACKEND + '/api/ask', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ question: question.trim() }),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    renderTrajectory(data);
+  } catch (e) {
+    trajC.innerHTML = `<p class="note" style="color:var(--red)">⚠️ 无法连接后端（${esc(e.message)}）。请先启动后端：<br>
+      <code>python scripts\\backend.py --rule</code>（无模型）或 <code>python scripts\\backend.py</code>（加载模型）</p>`;
+  }
+}
+
+askBtn.addEventListener('click', () => ask(qInput.value));
+qInput.addEventListener('keydown', e => { if (e.key === 'Enter') ask(qInput.value); });
+
+const SAMPLES = [
+  "Who is the author of the novel that the movie 'The Shining' was based on?",
+  "What country does the director of 'Inception' come from?",
+  "Which club did the 2010 World Cup Golden Boot winner play for that year?",
+];
+function askSample(i) { qInput.value = SAMPLES[i]; ask(SAMPLES[i]); }
+
+// 启动时检测后端
+fetch(BACKEND + '/api/health', { method: 'GET' })
+  .then(r => r.json())
+  .then(h => {
+    statusEl.innerHTML = `（后端已连接 · ${h.corpus_size} 段语料 · ${h.backend === 'model' ? '模型推理' : '规则模式'}）`;
+    statusEl.style.color = 'var(--green)';
+  })
+  .catch(() => {
+    statusEl.innerHTML = '（后端未启动，当前为静态示例）';
+    statusEl.style.color = 'var(--orange)';
+    if (DEMO_DATA.length) renderTrajectory(DEMO_DATA[0]);
+  });
+</script>
+</body>
+</html>

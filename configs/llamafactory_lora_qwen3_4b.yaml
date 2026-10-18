@@ -1,0 +1,50 @@
+### ============================================================
+### SearchAgent — Qwen3-4B LoRA SFT（16GB 显存本地配置）
+### 数据与 Qwen3-1.7B 版本一致：data/traces/sft_data.json
+### 运行：llamafactory-cli train configs/llamafactory_lora_qwen3_4b.yaml
+### ============================================================
+
+### model
+model_name_or_path: data/models/Qwen3-4B
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target: all
+gradient_checkpointing: true
+
+### dataset
+dataset: sft_data
+dataset_dir: data
+template: qwen3_nothink
+cutoff_len: 512
+overwrite_cache: true
+preprocessing_num_workers: 4
+
+### output
+output_dir: data/models/sft_lora_qwen3_4b
+logging_steps: 5
+save_steps: 200
+plot_loss: true
+
+### train
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 16
+learning_rate: 5.0e-5
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+report_to: none
+
+### eval
+val_size: 0.1
+per_device_eval_batch_size: 2
+eval_strategy: steps
+eval_steps: 100

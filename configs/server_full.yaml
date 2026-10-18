@@ -1,0 +1,84 @@
+# =============================================================================
+# SearchAgent — 高性能服务器全量配置（多卡 A100/H100，跑出简历真实数字）
+# 与 local_smoke.yaml 同构，仅规模/框架不同：同一套代码，--config 切换
+# =============================================================================
+
+mode: server_full           # local_smoke | server_full
+
+# ------------------------------------------------------------------ 基座模型
+model:
+  name: "Qwen/Qwen3-8B"              # 全量用 8B（简历口径不妥协）
+  dtype: "bfloat16"
+  max_seq_len: 8192
+  trust_remote_code: true
+
+# ------------------------------------------------------------------ 检索后端
+retrieval:
+  backend: "hybrid"
+  bm25: { enabled: true, k1: 1.5, b: 0.75 }
+  dense_model: "BAAI/bge-m3"
+  rrf_k: 60
+  top_k: 20
+  reranker_model: "BAAI/bge-reranker-base"
+  use_reranker: true                 # full 开启重排
+  tavily:
+    enabled: true                    # 在线搜索消融后端
+    api_key_env: "TAVILY_API_KEY"
+    max_results: 5
+
+# ------------------------------------------------------------------ Agent 预算
+agent:
+  max_search: 4
+  max_read: 6
+  max_evidence: 5
+  token_budget: 8192                 # 8K token 预算（简历口径）
+  dedup_queries: true
+  bridge_entity_direct_read: true
+  recovery_feedback: true
+
+# ------------------------------------------------------------------ 数据
+data:
+  dataset: "SearchTrace"
+  n_samples_smoke: 300
+  sft_trajectories: 6000             # 简历口径：6000 SFT
+  rl_samples: 1000                   # 简历口径：1000 RL
+  mix_ratio:
+    oracle: 0.60
+    teacher: 0.25
+    drift_recovery: 0.15
+  eval_splits:
+    sealed_test: true
+    musique_zero_shot: true
+
+# ------------------------------------------------------------------ SFT
+sft:
+  method: "dora"                     # full 用 DoRA（对比维度）
+  lora_r: 32
+  lora_alpha: 64
+  lora_dropout: 0.05
+  lr: 5.0e-5
+  epochs: 3
+  batch_size: 8
+  grad_accum: 4
+  deepspeed: "configs/ds_zero3.json"
+  checkpoint_metric: "joint_f1"
+
+# ------------------------------------------------------------------ RL (GRPO/GSPO) — verl/vLLM/Ray/FSDP 分布式
+rl:
+  method: "gspo"                     # full 用 GSPO（对比维度）
+  framework: "verl"                  # verl(server) | trl(local smoke)
+  group_size: 4
+  epochs: 1
+  lr: 1.0e-6
+  kl_coef: 0.04
+  reward:
+    stage1: ["new_supporting_fact", "citation_validity", "grounding"]
+    stage2: ["answer_em_f1", "evidence_consistency"]
+    penalties: ["dup_query", "redundant_evidence", "illegal_action", "tool_cost"]
+    zero_variance_resample: true
+    monitor_components: true
+
+# ------------------------------------------------------------------ 评测
+eval:
+  metrics: [answer_f1, joint_f1, evidence_all_hit, redundancy_rate, avg_tool_calls]
+  compare_combos: ["lora_grpo", "lora_gspo", "dora_grpo", "dora_gspo"]

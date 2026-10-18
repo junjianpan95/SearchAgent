@@ -1,0 +1,296 @@
+[
+  {
+    "question": "Who is the author of the novel that the movie 'The Shining' was based on?",
+    "answer": "Stephen King",
+    "citations": [
+      0,
+      1
+    ],
+    "trajectory": [
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "The Shining (film)"
+          }
+        },
+        "result": {
+          "query": "The Shining (film)",
+          "hits": [
+            {
+              "page": "The Shining (film)",
+              "text": "The Shining is a 1980 horror film based on Stephen King's 1977 novel of the same name.",
+              "score": 1.028783490330283,
+              "source": "local"
+            },
+            {
+              "page": "Stephen King",
+              "text": "Stephen King is an American author who wrote the novel The Shining.",
+              "score": 0.6219162131867583,
+              "source": "local"
+            },
+            {
+              "page": "Inception",
+              "text": "Inception is a 2010 science fiction action film directed by Christopher Nolan.",
+              "score": 0.6219162131867583,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "Stephen King"
+          }
+        },
+        "result": {
+          "query": "Stephen King",
+          "hits": [
+            {
+              "page": "Stephen King",
+              "text": "Stephen King is an American author who wrote the novel The Shining.",
+              "score": 1.2438324263735165,
+              "source": "local"
+            },
+            {
+              "page": "The Shining (film)",
+              "text": "The Shining is a 1980 horror film based on Stephen King's 1977 novel of the same name.",
+              "score": 1.028783490330283,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "The Shining is a 1980 horror film based on Stephen King's 1977 novel.",
+            "page": "The Shining (film)"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "Stephen King wrote the novel The Shining.",
+            "page": "Stephen King"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "Answer",
+          "args": {
+            "answer": "Stephen King",
+            "citations": [
+              0,
+              1
+            ]
+          }
+        }
+      }
+    ],
+    "budget": {
+      "search_used": 2,
+      "read_used": 0,
+      "tokens_used": 204,
+      "tool_calls": 2
+    },
+    "evidence": [
+      "The Shining is a 1980 horror film based on Stephen King's 1977 novel.",
+      "Stephen King wrote the novel The Shining."
+    ]
+  },
+  {
+    "question": "What country does the director of 'Inception' come from?",
+    "answer": "United Kingdom",
+    "citations": [
+      0,
+      1
+    ],
+    "trajectory": [
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "Inception"
+          }
+        },
+        "result": {
+          "query": "Inception",
+          "hits": [
+            {
+              "page": "Inception",
+              "text": "Inception is a 2010 science fiction action film directed by Christopher Nolan.",
+              "score": 1.3747252219184696,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "Christopher Nolan"
+          }
+        },
+        "result": {
+          "query": "Christopher Nolan",
+          "hits": [
+            {
+              "page": "Christopher Nolan",
+              "text": "Christopher Nolan is a British-American filmmaker born in London, England.",
+              "score": 1.2887301209083897,
+              "source": "local"
+            },
+            {
+              "page": "Inception",
+              "text": "Inception is a 2010 science fiction action film directed by Christopher Nolan.",
+              "score": 1.2438324263735165,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "Inception was directed by Christopher Nolan.",
+            "page": "Inception"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "Christopher Nolan is a British-American filmmaker born in London.",
+            "page": "Christopher Nolan"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "Answer",
+          "args": {
+            "answer": "United Kingdom",
+            "citations": [
+              0,
+              1
+            ]
+          }
+        }
+      }
+    ],
+    "budget": {
+      "search_used": 2,
+      "read_used": 0,
+      "tokens_used": 121,
+      "tool_calls": 2
+    },
+    "evidence": [
+      "Inception was directed by Christopher Nolan.",
+      "Christopher Nolan is a British-American filmmaker born in London."
+    ]
+  },
+  {
+    "question": "Which club did the 2010 World Cup Golden Boot winner play for that year?",
+    "answer": "Bayern Munich",
+    "citations": [
+      0,
+      1
+    ],
+    "trajectory": [
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "2010 FIFA World Cup"
+          }
+        },
+        "result": {
+          "query": "2010 FIFA World Cup",
+          "hits": [
+            {
+              "page": "2010 FIFA World Cup",
+              "text": "The 2010 FIFA World Cup Golden Boot was won by Thomas Müller of Germany.",
+              "score": 3.7339207254210764,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "Search",
+          "args": {
+            "query": "Thomas Müller"
+          }
+        },
+        "result": {
+          "query": "Thomas Müller",
+          "hits": [
+            {
+              "page": "Thomas Müller",
+              "text": "Thomas Müller is a German footballer who played for Bayern Munich in 2010.",
+              "score": 1.7442161588169034,
+              "source": "local"
+            },
+            {
+              "page": "2010 FIFA World Cup",
+              "text": "The 2010 FIFA World Cup Golden Boot was won by Thomas Müller of Germany.",
+              "score": 1.6891999949289869,
+              "source": "local"
+            }
+          ]
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "The 2010 FIFA World Cup Golden Boot was won by Thomas Müller.",
+            "page": "2010 FIFA World Cup"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "AddEvidence",
+          "args": {
+            "text": "Thomas Müller played for Bayern Munich in 2010.",
+            "page": "Thomas Müller"
+          }
+        }
+      },
+      {
+        "action": {
+          "type": "Answer",
+          "args": {
+            "answer": "Bayern Munich",
+            "citations": [
+              0,
+              1
+            ]
+          }
+        }
+      }
+    ],
+    "budget": {
+      "search_used": 2,
+      "read_used": 0,
+      "tokens_used": 122,
+      "tool_calls": 2
+    },
+    "evidence": [
+      "The 2010 FIFA World Cup Golden Boot was won by Thomas Müller.",
+      "Thomas Müller played for Bayern Munich in 2010."
+    ]
+  }
+]

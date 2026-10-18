@@ -1,0 +1,9 @@
+{
+  "answer_f1": 0.6666666666666666,
+  "joint_f1": 0.4444444444444444,
+  "evidence_all_hit": 0.5,
+  "redundancy_rate": 0.0,
+  "avg_tool_calls": 5.0,
+  "n_samples": 3,
+  "checkpoint": "base_react_smoke"
+}

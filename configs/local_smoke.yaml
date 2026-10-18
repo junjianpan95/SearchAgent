@@ -1,0 +1,86 @@
+# =============================================================================
+# SearchAgent — 本地 smoke 配置（单卡 RTX 5060 Ti 16GB 可跑通全链路）
+# 目的：用更小基座 + 小数据验证 数据构造→检索→Agent→SFT→评测 全链路逻辑正确
+# 产出：真实 smoke 数字，证明代码正确；全量真实数字在 server_full.yaml 上跑
+# =============================================================================
+
+mode: local_smoke          # local_smoke | server_full
+
+# ------------------------------------------------------------------ 基座模型
+model:
+  name: "Qwen/Qwen3-1.7B"          # smoke 用 1.7B；full 用 Qwen/Qwen3-8B
+  dtype: "bfloat16"
+  max_seq_len: 4096
+  trust_remote_code: true
+
+# ------------------------------------------------------------------ 检索后端
+retrieval:
+  backend: "hybrid"                 # hybrid | bm25 | dense | tavily
+  bm25: { enabled: true, k1: 1.5, b: 0.75 }
+  dense_model: "data/models/bge-m3" # 本地 BGE-M3 稠密检索模型（相对项目根）
+  device: "cuda"                    # 稠密检索设备 cuda | cpu
+  rrf_k: 60                         # RRF 融合参数
+  top_k: 20                         # 召回候选数
+  reranker_model: "data/models/bge-reranker-base"  # 重排模型（相对项目根）
+  use_reranker: false               # smoke 关闭重排省显存；full 开启
+  tavily:
+    enabled: false                  # Tavily 在线搜索（可插拔，需 TAVILY_API_KEY）
+    api_key_env: "TAVILY_API_KEY"
+    max_results: 5
+
+# ------------------------------------------------------------------ Agent 预算
+agent:
+  max_search: 4                     # 最多 Search 次数
+  max_read: 6                       # 最多 Read 次数
+  max_evidence: 5                   # Evidence Memory 固定容量
+  token_budget: 8192                # token 预算（full 8K；smoke 可小）
+  dedup_queries: true               # 历史查询去重
+  bridge_entity_direct_read: true   # 桥接实体 direct-read
+  recovery_feedback: true           # 结构化 recovery feedback
+
+# ------------------------------------------------------------------ 数据
+data:
+  dataset: "AgenticRagTrace"        # AgenticRAGTracer（ACL 2026）多跳问题集
+  n_samples_smoke: 300              # smoke 抽样数
+  sft_trajectories: 6000            # full 模式 SFT 轨迹数
+  rl_samples: 1000                  # full 模式 RL 样本数
+  mix_ratio:                        # 三类轨迹配比（Oracle/Teacher/漂移恢复）
+    oracle: 0.60
+    teacher: 0.25
+    drift_recovery: 0.15
+  eval_splits:
+    sealed_test: true               # 页面隔离 sealed test
+    musique_zero_shot: true         # MuSiQue zero-shot 泛化
+
+# ------------------------------------------------------------------ SFT
+sft:
+  method: "lora"                    # lora | dora（四方案对比维度之一）
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  lr: 5.0e-5
+  epochs: 3
+  batch_size: 4
+  grad_accum: 8
+  deepspeed: "configs/ds_zero2.json"
+  checkpoint_metric: "joint_f1"     # 用 Joint F1 / 证据链召回 / 工具成本联合选 checkpoint
+
+# ------------------------------------------------------------------ RL (GRPO/GSPO)
+rl:
+  method: "grpo"                    # grpo | gspo（四方案对比维度之一）
+  framework: "trl"                  # verl(server) | trl(local smoke)
+  group_size: 4                     # 每题采样轨迹数（full 4；smoke 2）
+  epochs: 1
+  lr: 1.0e-6
+  kl_coef: 0.04                    # KL 约束
+  reward:
+    stage1: ["new_supporting_fact", "citation_validity", "grounding"]
+    stage2: ["answer_em_f1", "evidence_consistency"]
+    penalties: ["dup_query", "redundant_evidence", "illegal_action", "tool_cost"]
+    zero_variance_resample: true    # 零方差 group 重采样
+    monitor_components: true        # reward component 分布监控
+
+# ------------------------------------------------------------------ 评测
+eval:
+  metrics: [answer_f1, joint_f1, evidence_all_hit, redundancy_rate, avg_tool_calls]
+  compare_combos: ["lora_grpo", "lora_gspo", "dora_grpo", "dora_gspo"]

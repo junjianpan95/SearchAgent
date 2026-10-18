@@ -1,0 +1,11 @@
+# verl 0.10 自定义 agent loop 注册表
+#
+# 通过 actor_rollout_ref.rollout.agent.agent_loop_config_path 指向本文件，
+# AgentLoopWorker 会把每个条目写入全局 _agent_loop_registry，
+# 再由 default_agent_loop 按 name 选择。
+#
+# 用法（run_verl_grpo.sh 已内置）：
+#   actor_rollout_ref.rollout.agent.default_agent_loop=searchagent_multihop
+#   actor_rollout_ref.rollout.agent.agent_loop_config_path=<abs path of this file>
+- name: searchagent_multihop
+  _target_: src.train.searchagent_loop.SearchAgentLoop

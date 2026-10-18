@@ -1,0 +1,29 @@
+{
+  "base_react": {
+    "answer_f1": 0.020142568896635224,
+    "joint_f1": 0.03754790914519225,
+    "evidence_all_hit": 1.0,
+    "redundancy_rate": 0.0,
+    "avg_tool_calls": 2.0,
+    "n_samples": 100,
+    "method": "base_react"
+  },
+  "lora": {
+    "answer_f1": 0.053018654007700665,
+    "joint_f1": 0.06599084981318865,
+    "evidence_all_hit": 0.5516666666666666,
+    "redundancy_rate": 0.0,
+    "avg_tool_calls": 2.07,
+    "n_samples": 100,
+    "method": "lora"
+  },
+  "dora": {
+    "answer_f1": 0.07090989010989011,
+    "joint_f1": 0.08619913008165657,
+    "evidence_all_hit": 0.5508333333333333,
+    "redundancy_rate": 0.0,
+    "avg_tool_calls": 2.07,
+    "n_samples": 100,
+    "method": "dora"
+  }
+}

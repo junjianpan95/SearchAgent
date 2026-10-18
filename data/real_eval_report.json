@@ -1,0 +1,9 @@
+{
+  "answer_f1": 0.0,
+  "joint_f1": 0.0,
+  "evidence_all_hit": 0.03333333333333333,
+  "redundancy_rate": 0.0,
+  "avg_tool_calls": 0.06666666666666667,
+  "n_samples": 30,
+  "mode": "base_react"
+}

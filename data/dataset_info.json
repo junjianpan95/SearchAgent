@@ -1,0 +1,10 @@
+{
+  "sft_data": {
+    "file_name": "traces/sft_data.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output"
+    }
+  }
+}
